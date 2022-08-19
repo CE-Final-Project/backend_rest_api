@@ -7,12 +7,15 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
+	"os"
+	"strconv"
 	"time"
 )
 
 type IMongo interface {
 	Connect()
 	FindAccount(accountId string) (model.Account, error)
+	Seed()
 }
 
 type Mongo struct {
@@ -20,7 +23,7 @@ type Mongo struct {
 }
 
 func (m *Mongo) Connect() {
-	client, err := mongo.NewClient(options.Client().ApplyURI(""))
+	client, err := mongo.NewClient(options.Client().ApplyURI(os.Getenv("MONGO_URI")))
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	err = client.Connect(ctx)
@@ -40,4 +43,22 @@ func (m *Mongo) FindAccount(accountId string) (model.Account, error) {
 		return model.Account{}, err
 	}
 	return result, nil
+}
+
+func (m *Mongo) Seed() {
+	var newAccounts []interface{}
+
+	for i := 0; i < 100; i++ {
+		account := bson.M{
+			"name": "test" + strconv.Itoa(i),
+		}
+		newAccounts = append(newAccounts, account)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	_, err := m.DB.InsertMany(ctx, newAccounts)
+	if err != nil {
+		log.Printf("Mongo: Can not seed fake account ====> error: %v", err)
+		return
+	}
 }
