@@ -6,9 +6,9 @@ import (
 	"github.com/vmihailenco/msgpack"
 )
 
-type Redirect struct{}
+type Account struct{}
 
-func (r *Redirect) Decode(input []byte) (*core.Account, error) {
+func (a *Account) Decode(input []byte) (*core.Account, error) {
 	account := &core.Account{}
 	if err := msgpack.Unmarshal(input, account); err != nil {
 		return nil, fmt.Errorf("%v serializer.Account.Decode", err)
@@ -16,7 +16,7 @@ func (r *Redirect) Decode(input []byte) (*core.Account, error) {
 	return account, nil
 }
 
-func (r *Redirect) Encode(input *core.Account) ([]byte, error) {
+func (a *Account) Encode(input *core.Account) ([]byte, error) {
 	rawMsg, err := msgpack.Marshal(input)
 	if err != nil {
 		return nil, fmt.Errorf("%v serializer.Account.Encode", err)
