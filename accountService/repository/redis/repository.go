@@ -77,7 +77,30 @@ func (r *redisRepository) Store(account *core.Account) error {
 	return nil
 }
 
-func (r *redisRepository) Remove(playerId string, accountId string) (*core.Account, error) {
-	//TODO implement me
-	panic("implement me")
+func (r *redisRepository) Remove(playerId string, _ string) (*core.Account, error) {
+	key := r.generateKey(playerId)
+	account := &core.Account{}
+	result, err := r.client.HGetAll(key).Result()
+	if err != nil {
+		return nil, errors.Wrap(err, "repository.Account.Remove")
+	}
+	if len(result) == 0 {
+		return nil, errors.Wrap(core.ErrAccountNotFound, "repository.Account.Remove")
+	}
+	_, err = r.client.Del(key).Result()
+	if err != nil {
+		return nil, errors.Wrap(err, "repository.Account.Remove")
+	}
+
+	var createdAt int64
+	createdAt, err = strconv.ParseInt(result["create_at"], 10, 64)
+	if err != nil {
+		return nil, errors.Wrap(err, "repository.Account.Remove")
+	}
+
+	account.PlayerId = result["player_id"]
+	account.Username = result["username"]
+	account.Email = result["email"]
+	account.CreatedAt = createdAt
+	return account, nil
 }
