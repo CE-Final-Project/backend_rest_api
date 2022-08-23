@@ -2,8 +2,8 @@ package mongo
 
 import (
 	"context"
-	"fmt"
 	"github.com/ce-final-project/backend_rest_api/accountService/core"
+	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -38,7 +38,7 @@ func NewMongoRepository(mongoURL string, mongoDB string, mongoTimeout int) (core
 	}
 	client, err := newMongoClient(mongoURL, mongoTimeout)
 	if err != nil {
-		return nil, fmt.Errorf("%v repository.NewMongoRepository", err)
+		return nil, errors.Wrap(err, "repository.NewMongoRepository")
 	}
 	repo.client = client
 	return repo, nil
@@ -59,9 +59,9 @@ func (m *mongoRepository) Find(playerId string, accountId string) (*core.Account
 	err := collection.FindOne(ctx, filter).Decode(&account)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return nil, fmt.Errorf("%v repository.Account.Find", core.ErrAccountNotFound)
+			return nil, errors.Wrap(core.ErrAccountNotFound, "repository.Account.Find")
 		}
-		return nil, fmt.Errorf("%v repository.Account.Find", err)
+		return nil, errors.Wrap(err, "repository.Account.Find")
 	}
 	return account, nil
 }
@@ -78,7 +78,7 @@ func (m *mongoRepository) Store(account *core.Account) error {
 		"created_at":    account.CreatedAt,
 	})
 	if err != nil {
-		return fmt.Errorf("%v repository.Account.Store", err)
+		return errors.Wrap(err, "repository.Account.Store")
 	}
 	return nil
 }
@@ -98,9 +98,9 @@ func (m *mongoRepository) Remove(playerId string, accountId string) (*core.Accou
 	err := collection.FindOneAndDelete(ctx, filter).Decode(&account)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return nil, fmt.Errorf("%v repository.Account.Remove", core.ErrAccountNotFound)
+			return nil, errors.Wrap(core.ErrAccountNotFound, "repository.Account.Remove")
 		}
-		return nil, fmt.Errorf("%v repository.Account.Remove", err)
+		return nil, errors.Wrap(err, "repository.Account.Remove")
 	}
 	return account, nil
 }

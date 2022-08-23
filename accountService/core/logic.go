@@ -1,8 +1,7 @@
 package core
 
 import (
-	"errors"
-	"fmt"
+	"github.com/pkg/errors"
 	"github.com/teris-io/shortid"
 	"gopkg.in/dealancer/validate.v2"
 	"time"
@@ -29,7 +28,7 @@ func (a *accountService) Find(playerId string, accountId string) (*Account, erro
 
 func (a *accountService) Store(account *Account) error {
 	if err := validate.Validate(account); err != nil {
-		return fmt.Errorf("%v service.account.store", ErrAccountInvalid)
+		return errors.Wrap(ErrAccountInvalid, "service.Account.Store")
 	}
 	account.PlayerId = shortid.MustGenerate()
 	account.CreatedAt = time.Now().UTC().Unix()
