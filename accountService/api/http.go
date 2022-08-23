@@ -9,7 +9,8 @@ import (
 )
 
 type AccountHandler interface {
-	Get(w http.ResponseWriter, r *http.Request)
+	GetAllAccount(w http.ResponseWriter, r *http.Request)
+	GetSingleAccount(w http.ResponseWriter, r *http.Request)
 	Post(w http.ResponseWriter, r *http.Request)
 	Put(w http.ResponseWriter, r *http.Request)
 	Path(w http.ResponseWriter, r *http.Request)
@@ -40,8 +41,11 @@ func (h *handler) serializer(contentType string) core.AccountSerializer {
 	return &js.Account{}
 }
 
-// TODO Implement all handler
-func (h *handler) Get(w http.ResponseWriter, r *http.Request) {
+func (h *handler) GetAllAccount(w http.ResponseWriter, r *http.Request) {
+	h.accountService.Find()
+}
+
+func (h *handler) GetSingleAccount(w http.ResponseWriter, r *http.Request) {
 
 }
 

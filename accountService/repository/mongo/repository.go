@@ -44,7 +44,30 @@ func NewMongoRepository(mongoURL string, mongoDB string, mongoTimeout int) (core
 	return repo, nil
 }
 
-func (m *mongoRepository) Find(playerId string, accountId string) (*core.Account, error) {
+func (m *mongoRepository) Find(username string) ([]*core.Account, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
+	defer cancel()
+	var filter bson.M
+	if username != "" {
+		filter["username"] = username
+	}
+	collection := m.client.Database(m.database).Collection("accounts")
+	cursor, err := collection.Find(ctx, filter)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, errors.Wrap(core.ErrAccountNotFound, "repository.Account.Find")
+		}
+		return nil, errors.Wrap(err, "repository.Account.Find")
+	}
+	var results []*core.Account
+	err = cursor.All(ctx, &results)
+	if err != nil {
+		return nil, errors.Wrap(err, "repository.Account.Find")
+	}
+	return results, nil
+}
+
+func (m *mongoRepository) FindOne(playerId string) (*core.Account, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
 	defer cancel()
 	account := &core.Account{}
@@ -52,16 +75,13 @@ func (m *mongoRepository) Find(playerId string, accountId string) (*core.Account
 	if playerId != "" {
 		filter["player_id"] = playerId
 	}
-	if accountId != "" {
-		filter["_id"] = accountId
-	}
 	collection := m.client.Database(m.database).Collection("accounts")
 	err := collection.FindOne(ctx, filter).Decode(&account)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return nil, errors.Wrap(core.ErrAccountNotFound, "repository.Account.Find")
+			return nil, errors.Wrap(core.ErrAccountNotFound, "repository.Account.FindOne")
 		}
-		return nil, errors.Wrap(err, "repository.Account.Find")
+		return nil, errors.Wrap(err, "repository.Account.FindOne")
 	}
 	return account, nil
 }

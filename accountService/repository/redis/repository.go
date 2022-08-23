@@ -39,24 +39,30 @@ func (r *redisRepository) generateKey(playerId string) string {
 	return fmt.Sprintf("account:%s", playerId)
 }
 
-func (r *redisRepository) Find(playerId string, _ string) (*core.Account, error) {
+func (r *redisRepository) Find(username string) ([]*core.Account, error) {
+	// TODO: Implement me
+	panic("Implement me repository.Find")
+}
+
+func (r *redisRepository) FindOne(playerId string) (*core.Account, error) {
 	account := &core.Account{}
 	key := r.generateKey(playerId)
 	result, err := r.client.HGetAll(key).Result()
 	if err != nil {
-		return nil, errors.Wrap(err, "repository.Account.Find")
+		return nil, errors.Wrap(err, "repository.Account.FindOne")
 	}
 	if len(result) == 0 {
-		return nil, errors.Wrap(core.ErrAccountNotFound, "repository.Account.Find")
+		return nil, errors.Wrap(core.ErrAccountNotFound, "repository.Account.FindOne")
 	}
 	var createdAt int64
 	createdAt, err = strconv.ParseInt(result["create_at"], 10, 64)
 	if err != nil {
-		return nil, errors.Wrap(err, "repository.Account.Find")
+		return nil, errors.Wrap(err, "repository.Account.FindOne")
 	}
 	account.PlayerId = result["player_id"]
 	account.Username = result["username"]
 	account.Email = result["email"]
+	account.PasswordHash = result["password_hash"]
 	account.CreatedAt = createdAt
 	return account, nil
 }
