@@ -22,8 +22,12 @@ func NewAccountService(accountRepo AccountRepository) AccountService {
 	}
 }
 
-func (a *accountService) Find(playerId string, accountId string) (*Account, error) {
-	return a.accountRepo.Find(playerId, accountId)
+func (a *accountService) Find(username string) ([]*Account, error) {
+	return a.accountRepo.Find(username)
+}
+
+func (a *accountService) FindOne(playerId string) (*Account, error) {
+	return a.accountRepo.FindOne(playerId)
 }
 
 func (a *accountService) Store(account *Account) error {

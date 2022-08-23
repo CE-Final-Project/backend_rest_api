@@ -1,6 +1,8 @@
 package core
 
+import "io"
+
 type AccountSerializer interface {
-	Decode(input []byte) (*Account, error)
-	Encode(input *Account) ([]byte, error)
+	Decode(v interface{}, r io.Reader) error
+	Encode(v interface{}, w io.Writer) error
 }

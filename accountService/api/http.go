@@ -4,6 +4,7 @@ import (
 	"github.com/ce-final-project/backend_rest_api/accountService/core"
 	js "github.com/ce-final-project/backend_rest_api/accountService/serializer/json"
 	ms "github.com/ce-final-project/backend_rest_api/accountService/serializer/msgpack"
+	"github.com/pkg/errors"
 	"log"
 	"net/http"
 )
@@ -42,11 +43,27 @@ func (h *handler) serializer(contentType string) core.AccountSerializer {
 }
 
 func (h *handler) GetAllAccount(w http.ResponseWriter, r *http.Request) {
-	h.accountService.Find()
+	contentType := r.Header.Get("Content-Type")
+	accounts, err := h.accountService.Find("")
+	if err != nil {
+		if errors.Cause(err) == core.ErrAccountNotFound {
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	err = h.serializer(contentType).Encode(&accounts, w)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
 }
 
 func (h *handler) GetSingleAccount(w http.ResponseWriter, r *http.Request) {
-
+	//TODO implement me
+	panic("implement me")
 }
 
 func (h *handler) Post(w http.ResponseWriter, r *http.Request) {

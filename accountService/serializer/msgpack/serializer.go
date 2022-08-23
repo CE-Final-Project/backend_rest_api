@@ -5,16 +5,17 @@ import (
 	"io"
 )
 
-// ToMSG serializes the given interface into a string based MessagePack format
-func ToMSG(i interface{}, w io.Writer) error {
-	e := msgpack.NewEncoder(w)
+type Account struct{}
 
-	return e.Encode(i)
+func (a *Account) Decode(v interface{}, r io.Reader) error {
+
+	d := msgpack.NewDecoder(r)
+
+	return d.Decode(v)
 }
 
-// FromMSG deserializes the object from MessagePack string
-// in an io.Reader to the given interface
-func FromMSG(i interface{}, r io.Reader) error {
-	d := msgpack.NewDecoder(r)
-	return d.Decode(i)
+func (a *Account) Encode(v interface{}, w io.Writer) error {
+	e := msgpack.NewEncoder(w)
+
+	return e.Encode(v)
 }
