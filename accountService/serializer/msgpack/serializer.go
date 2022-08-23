@@ -1,25 +1,20 @@
 package msgpack
 
 import (
-	"github.com/ce-final-project/backend_rest_api/accountService/core"
-	"github.com/pkg/errors"
 	"github.com/vmihailenco/msgpack"
+	"io"
 )
 
-type Account struct{}
+// ToMSG serializes the given interface into a string based MessagePack format
+func ToMSG(i interface{}, w io.Writer) error {
+	e := msgpack.NewEncoder(w)
 
-func (a *Account) Decode(input []byte) (*core.Account, error) {
-	account := &core.Account{}
-	if err := msgpack.Unmarshal(input, account); err != nil {
-		return nil, errors.Wrap(err, "serializer.Account.Decode")
-	}
-	return account, nil
+	return e.Encode(i)
 }
 
-func (a *Account) Encode(input *core.Account) ([]byte, error) {
-	rawMsg, err := msgpack.Marshal(input)
-	if err != nil {
-		return nil, errors.Wrap(err, "serializer.Account.Encode")
-	}
-	return rawMsg, nil
+// FromMSG deserializes the object from MessagePack string
+// in an io.Reader to the given interface
+func FromMSG(i interface{}, r io.Reader) error {
+	d := msgpack.NewDecoder(r)
+	return d.Decode(i)
 }

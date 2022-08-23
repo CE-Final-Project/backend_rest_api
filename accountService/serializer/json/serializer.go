@@ -2,24 +2,19 @@ package json
 
 import (
 	"encoding/json"
-	"github.com/ce-final-project/backend_rest_api/accountService/core"
-	"github.com/pkg/errors"
+	"io"
 )
 
-type Account struct{}
+// ToJSON serializes the given interface into a string based JSON format
+func ToJSON(i interface{}, w io.Writer) error {
+	e := json.NewEncoder(w)
 
-func (a *Account) Decode(input []byte) (*core.Account, error) {
-	account := &core.Account{}
-	if err := json.Unmarshal(input, account); err != nil {
-		return nil, errors.Wrap(err, "serializer.Account.Decode")
-	}
-	return account, nil
+	return e.Encode(i)
 }
 
-func (a *Account) Encode(input *core.Account) ([]byte, error) {
-	rawMsg, err := json.Marshal(input)
-	if err != nil {
-		return nil, errors.Wrap(err, "serializer.Account.Encode")
-	}
-	return rawMsg, nil
+// FromJSON deserializes the object from JSON string
+// in an io.Reader to the given interface
+func FromJSON(i interface{}, r io.Reader) error {
+	d := json.NewDecoder(r)
+	return d.Decode(i)
 }
