@@ -4,7 +4,9 @@ import (
 	"github.com/ce-final-project/backend_rest_api/accountService/core"
 	js "github.com/ce-final-project/backend_rest_api/accountService/serializer/json"
 	ms "github.com/ce-final-project/backend_rest_api/accountService/serializer/msgpack"
+	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
+	"io"
 	"log"
 	"net/http"
 )
@@ -54,21 +56,43 @@ func (h *handler) GetAllAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.serializer(contentType).Encode(&accounts, w)
 	if err != nil {
+		// should never be here but log the error just in case
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 }
 
 func (h *handler) GetSingleAccount(w http.ResponseWriter, r *http.Request) {
-	//TODO implement me
-	panic("implement me")
+	contentType := r.Header.Get("Content-Type")
+	vars := mux.Vars(r)
+	playerId := vars["player_id"]
+	account, err := h.accountService.FindOne(playerId)
+	if err != nil {
+		if errors.Cause(err) == core.ErrAccountNotFound {
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	err = h.serializer(contentType).Encode(&account, w)
+	if err != nil {
+		// should never be here but log the error just in case
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
 }
 
 func (h *handler) Post(w http.ResponseWriter, r *http.Request) {
-	//TODO implement me
-	panic("implement me")
+	contentType := r.Header.Get("Content-Type")
+	requestBody, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	account := &core.Account{}
+	err = h.serializer(contentType).Decode(requestBody, r)
 }
 
 func (h *handler) Put(w http.ResponseWriter, r *http.Request) {
