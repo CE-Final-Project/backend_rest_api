@@ -1,26 +1,34 @@
 package main
 
 import (
+	"github.com/ce-final-project/backend_rest_api/account_service/config"
 	"github.com/ce-final-project/backend_rest_api/account_service/internal/core/services"
 	"github.com/ce-final-project/backend_rest_api/account_service/internal/handler"
 	"github.com/ce-final-project/backend_rest_api/account_service/internal/repositories"
+	"github.com/ce-final-project/backend_rest_api/account_service/pkg/postgres"
 	GRPCServices "github.com/ce-final-project/backend_rest_api/account_service/proto/services"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 	"log"
 	"net"
 	_ "time/tzdata"
 )
 
 func main() {
-	db, err := sqlx.Open("postgres", "host=localhost port=5432 user=admin password=test dbname=postgres sslmode=disable")
+
+	cfg, err := config.InitConfig()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Initial config error: %v", err)
+		return
 	}
-	err = db.Ping()
+
+	var db *sqlx.DB
+	db, err = postgres.NewPostgresDB(cfg.Postgresql)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Initial PostgresDB error: %v", err)
+		return
 	}
 
 	accRepo := repositories.NewAccountRepository(db)
@@ -30,14 +38,18 @@ func main() {
 	s := grpc.NewServer()
 
 	var listener net.Listener
-	listener, err = net.Listen("tcp", ":5050")
+	listener, err = net.Listen("tcp", ":"+cfg.GRPC.Port)
 	if err != nil {
 		log.Fatal(err)
+	}
+	if cfg.GRPC.Development {
+		log.Println("GRPC Development reflection active")
+		reflection.Register(s)
 	}
 
 	GRPCServices.RegisterAccountServiceServer(s, grpcHandler)
 
-	log.Println("Starting Account Service Grpc server port :5050")
+	log.Printf("Starting Account Service Grpc server port :%s\n", cfg.GRPC.Port)
 	err = s.Serve(listener)
 	if err != nil {
 		log.Fatal(err)

@@ -12,7 +12,7 @@ type gRPCHandler struct {
 	accSrv ports.AccountService
 }
 
-func (g *gRPCHandler) CreateAccount(ctx context.Context, request *services.AccountRequest) (*services.AccountResponse, error) {
+func (g *gRPCHandler) CreateAccount(_ context.Context, request *services.AccountRequest) (*services.AccountResponse, error) {
 	accountPayload := &domain.AccountRequest{
 		Username: request.Username,
 		Email:    request.Email,
@@ -28,7 +28,7 @@ func (g *gRPCHandler) CreateAccount(ctx context.Context, request *services.Accou
 		Username:  account.Username,
 		Email:     account.Email,
 		IsBan:     account.IsBan,
-		CreateAt:  account.CreateAt,
+		CreatedAt: account.CreatedAt,
 	}, nil
 }
 
@@ -45,7 +45,7 @@ func (g *gRPCHandler) GetAllAccount(_ context.Context, _ *emptypb.Empty) (*servi
 			Username:  account.Username,
 			Email:     account.Email,
 			IsBan:     account.IsBan,
-			CreateAt:  account.CreateAt,
+			CreatedAt: account.CreatedAt,
 		}
 		accountList = append(accountList, &accountRes)
 	}
@@ -63,7 +63,7 @@ func (g *gRPCHandler) GetAccount(_ context.Context, message *services.AccountIdM
 		Username:  account.Username,
 		Email:     account.Email,
 		IsBan:     account.IsBan,
-		CreateAt:  account.CreateAt,
+		CreatedAt: account.CreatedAt,
 	}, nil
 }
 
@@ -78,7 +78,7 @@ func (g *gRPCHandler) BanAccount(_ context.Context, message *services.AccountIdM
 		Username:  account.Username,
 		Email:     account.Email,
 		IsBan:     account.IsBan,
-		CreateAt:  account.CreateAt,
+		CreatedAt: account.CreatedAt,
 	}, nil
 
 }

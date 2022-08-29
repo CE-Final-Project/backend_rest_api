@@ -39,7 +39,7 @@ message AccountResponse {
   string username = 3;
   string email = 4;
   bool is_ban = 5;
-  string create_at = 6;
+  int64 created_at = 6;
 }
 
 message AccountList {

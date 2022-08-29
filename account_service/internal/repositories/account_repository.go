@@ -12,8 +12,8 @@ type accountRepository struct {
 }
 
 func (a *accountRepository) StoreAccount(account *domain.Account) (*domain.Account, error) {
-	query := "INSERT INTO accounts ( player_id, username, email, password_hash) VALUES ($1, $2, $3, $4) RETURNING account_id"
-	err := a.db.QueryRow(query, account.PlayerID, account.Username, account.Email, account.PasswordHash).Scan(&account.AccountID)
+	query := "INSERT INTO accounts ( player_id, username, email, password_hash, is_ban, created_at) VALUES ($1, $2, $3, $4, $5, $6) RETURNING account_id"
+	err := a.db.QueryRow(query, account.PlayerID, account.Username, account.Email, account.PasswordHash, account.IsBan, account.CreatedAt).Scan(&account.AccountID)
 	if err != nil {
 		return nil, err
 	}
@@ -24,7 +24,7 @@ func (a *accountRepository) GetAllAccount() ([]domain.Account, error) {
 	limit := 10
 	offset := 0
 	var accounts []domain.Account
-	query := "SELECT account_id, player_id, username, email, password_hash, is_ban, create_at FROM accounts LIMIT $1 OFFSET $2"
+	query := "SELECT account_id, player_id, username, email, password_hash, is_ban, created_at FROM accounts LIMIT $1 OFFSET $2"
 	err := a.db.Select(&accounts, query, limit, offset)
 	if err != nil {
 		return nil, err
@@ -34,7 +34,7 @@ func (a *accountRepository) GetAllAccount() ([]domain.Account, error) {
 
 func (a *accountRepository) GetAccount(accountID uint64) (*domain.Account, error) {
 	var account domain.Account
-	query := "SELECT account_id, player_id, username, email, password_hash, is_ban, create_at FROM accounts WHERE account_id=$1 LIMIT 1"
+	query := "SELECT account_id, player_id, username, email, password_hash, is_ban, created_at FROM accounts WHERE account_id=$1 LIMIT 1"
 	err := a.db.Get(&account, query, accountID)
 	if err != nil {
 		return nil, err

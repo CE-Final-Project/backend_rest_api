@@ -7,7 +7,7 @@ type Account struct {
 	Email        string `json:"email" bson:"email" db:"email"`
 	PasswordHash string `json:"password_hash" bson:"password_hash" db:"password_hash"`
 	IsBan        bool   `json:"is_ban" bson:"is_ban" db:"is_ban"`
-	CreateAt     string `json:"create_at" bson:"create_at" db:"create_at"`
+	CreatedAt    int64  `json:"created_at" bson:"created_at" db:"created_at"`
 }
 
 type AccountRequest struct {
@@ -22,5 +22,5 @@ type AccountResponse struct {
 	Username  string `json:"username" bson:"username" db:"username"`
 	Email     string `json:"email" bson:"email" db:"email"`
 	IsBan     bool   `json:"is_ban" bson:"is_ban" db:"is_ban"`
-	CreateAt  string `json:"create_at" bson:"create_at" db:"create_at"`
+	CreatedAt int64  `json:"created_at" bson:"created_at" db:"created_at"`
 }

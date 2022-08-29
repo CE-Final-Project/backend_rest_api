@@ -27,7 +27,7 @@ func (a *accountService) GetAllAccount() ([]domain.AccountResponse, error) {
 			Username:  account.Username,
 			Email:     account.Email,
 			IsBan:     account.IsBan,
-			CreateAt:  account.CreateAt,
+			CreatedAt: account.CreatedAt,
 		}
 		accountsRes = append(accountsRes, accountRes)
 	}
@@ -46,7 +46,7 @@ func (a *accountService) GetAccount(accountID uint64) (*domain.AccountResponse, 
 		Username:  account.Username,
 		Email:     account.Email,
 		IsBan:     account.IsBan,
-		CreateAt:  account.CreateAt,
+		CreatedAt: account.CreatedAt,
 	}, nil
 }
 
@@ -63,7 +63,7 @@ func (a *accountService) CreateAccount(account *domain.AccountRequest) (*domain.
 		Email:        account.Email,
 		PasswordHash: passwordHash,
 		IsBan:        false,
-		CreateAt:     time.Now().UTC().String(),
+		CreatedAt:    time.Now().Unix(),
 	}
 	var accCreated *domain.Account
 	accCreated, err = a.accRepo.StoreAccount(newAccount)
@@ -77,7 +77,7 @@ func (a *accountService) CreateAccount(account *domain.AccountRequest) (*domain.
 		Username:  accCreated.Username,
 		Email:     accCreated.Email,
 		IsBan:     accCreated.IsBan,
-		CreateAt:  accCreated.CreateAt,
+		CreatedAt: accCreated.CreatedAt,
 	}, nil
 }
 
@@ -116,7 +116,7 @@ func (a *accountService) BanAccount(accountID uint64) (*domain.AccountResponse, 
 		Username:  account.Username,
 		Email:     account.Email,
 		IsBan:     account.IsBan,
-		CreateAt:  account.CreateAt,
+		CreatedAt: account.CreatedAt,
 	}, nil
 }
 

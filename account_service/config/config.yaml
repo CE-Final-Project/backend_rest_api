@@ -1,0 +1,16 @@
+serviceName: "account_service"
+grpc:
+  port: 5001
+  development: true
+logger:
+  level: debug
+  devMode: false
+  encoder: json
+postgres:
+  host: localhost
+  port: 5432
+  user: account
+  password: "[yP=uz^h.=hservice"
+  dbName: account_db
+  sslMode: disable
+
