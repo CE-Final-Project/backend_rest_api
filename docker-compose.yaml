@@ -1,0 +1,23 @@
+version: "3.9"
+
+services:
+  account_service:
+    container_name: account_service
+    build:
+      context: ./account_service
+      dockerfile: Dockerfile
+    ports:
+      - "5050:5050"
+    volumes:
+      - ./account_service:/app
+    env_file:
+      - .env
+
+
+volumes:
+  psql_data_container:
+  mongodb_data_container:
+
+networks:
+  microservices:
+    name: microservices
