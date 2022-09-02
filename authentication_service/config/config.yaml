@@ -1,0 +1,12 @@
+serviceName: authentication_service
+grpc:
+  accountServicePort: 5001
+  development: true
+  port: 5002
+mongoDb:
+  host: localhost
+  port: 27020
+  user: authentication
+  password: "8sdvatP3iY8TXJ*mE9yB6fh"
+  dbName: auth_db
+

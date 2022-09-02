@@ -3,12 +3,11 @@ package config
 import (
 	"flag"
 	"fmt"
-	"github.com/ce-final-project/backend_rest_api/account_service/pkg/constants"
-	"github.com/ce-final-project/backend_rest_api/account_service/pkg/postgres"
+	"github.com/ce-final-project/backend_rest_api/pkg/constants"
+	"github.com/ce-final-project/backend_rest_api/pkg/postgres"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"os"
-	"strconv"
 )
 
 var configPath string
@@ -82,15 +81,6 @@ func InitConfig() (*Config, error) {
 	postgresPort := os.Getenv(constants.PostgresqlPort)
 	if postgresPort != "" {
 		cfg.Postgresql.Port = postgresPort
-	}
-
-	grpcDev := os.Getenv(constants.GrpcDev)
-	if grpcDev != "" {
-		isDev, err := strconv.ParseBool(grpcDev)
-		if err != nil {
-			cfg.GRPC.Development = false
-		}
-		cfg.GRPC.Development = isDev
 	}
 
 	return cfg, nil
