@@ -1,9 +1,13 @@
 package server
 
 import (
+	"context"
 	"github.com/ce-final-project/backend_rest_api/authentication_service/config"
+	"github.com/ce-final-project/backend_rest_api/pkg/interceptors"
 	"github.com/ce-final-project/backend_rest_api/pkg/logger"
 	"github.com/go-playground/validator"
+	"github.com/go-redis/redis/v8"
+	"github.com/segmentio/kafka-go"
 	"go.mongodb.org/mongo-driver/mongo"
 	"os"
 	"os/signal"
