@@ -20,15 +20,20 @@ func main() {
 
 	cfg, err := config.InitConfig()
 	if err != nil {
-		log.Fatalf("Initial config error: %v", err)
+		log.Fatalf("Initial config error: %v\n", err)
 		return
 	}
 
 	var db *sqlx.DB
 	db, err = postgres.NewPostgresDB(cfg.Postgresql)
 	if err != nil {
-		log.Fatalf("Initial PostgresDB error: %v", err)
+		log.Fatalf("Initial PostgresDB error: %v\n", err)
 		return
+	}
+
+	err = postgres.InitTableDB(db)
+	if err != nil {
+		log.Fatalln(err)
 	}
 
 	accRepo := repositories.NewAccountRepository(db)

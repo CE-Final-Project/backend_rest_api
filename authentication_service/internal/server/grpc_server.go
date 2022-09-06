@@ -51,7 +51,6 @@ func (s *server) newAuthGrpcServer() (func() error, *grpc.Server, error) {
 		s.log.Infof("Reader gRPC server is listening on port: %s", s.cfg.GRPC.Port)
 		s.log.Fatal(grpcServer.Serve(l))
 	}()
-
 	return l.Close, grpcServer, nil
 
 }

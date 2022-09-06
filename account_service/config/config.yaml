@@ -7,10 +7,10 @@ logger:
   devMode: false
   encoder: json
 postgres:
-  host: localhost
+  host: postgres-game-db
   port: 5432
   user: account
-  password: "[yP=uz^h.=hservice"
+  password: "3uP*SHMmk$*ri"
   dbName: account_db
   sslMode: disable
 

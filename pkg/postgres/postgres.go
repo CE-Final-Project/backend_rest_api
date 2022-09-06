@@ -2,7 +2,10 @@ package postgres
 
 import (
 	"fmt"
+	"github.com/ce-final-project/backend_rest_api/pkg/constants"
 	"github.com/jmoiron/sqlx"
+	"github.com/pkg/errors"
+	"os"
 )
 
 type Config struct {
@@ -33,4 +36,28 @@ func NewPostgresDB(cfg *Config) (*sqlx.DB, error) {
 		return nil, err
 	}
 	return db, nil
+}
+
+func InitTableDB(db *sqlx.DB) error {
+	var initTablePath string
+	initTablePathFromEnv := os.Getenv(constants.InitTablePath)
+	if initTablePathFromEnv != "" {
+		initTablePath = initTablePathFromEnv
+	} else {
+		getwd, err := os.Getwd()
+		if err != nil {
+			return errors.Wrap(err, "Initial Table database error: os.Getwd")
+		}
+		initTablePath = fmt.Sprintf("%s/scripts/account.sql", getwd)
+	}
+	query, err := os.ReadFile(initTablePath)
+	if err != nil {
+		return errors.Wrap(err, "Initial Table database error: os.ReadFile")
+	}
+	_, err = db.Exec(string(query))
+	if err != nil {
+		return errors.Wrap(err, "Initial Table database error: db.Exec")
+	}
+	return nil
+
 }

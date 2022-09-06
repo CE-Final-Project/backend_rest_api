@@ -5,9 +5,10 @@ services:
     container_name: account_service
     build:
       context: .
-      dockerfile: docker/account.Dockerfile
+      dockerfile: docker/dev/account.Dockerfile
+    restart: on-failure
     ports:
-      - "5050:5050"
+      - "5001:5001"
     networks:
       - microservices
     depends_on:
