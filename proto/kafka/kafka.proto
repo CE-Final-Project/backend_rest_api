@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+package kafkaMessages;
+
+option go_package = "./;kafkaMessages";
+
+
+message AccountCreate {
+  string AccountID = 1;
+  string PlayerID = 2;
+  string Username = 3;
+  string Email = 4;
+  string Password = 5;
+}
+
+message AccountUpdate {
+  string AccountID = 1;
+  string PlayerID = 2;
+  string Username = 3;
+  string Email = 4;
+  string Password = 5;
+  bool IsBan = 6;
+}
+
+message Account {
+  string AccountID = 1;
+  string PlayerID = 2;
+  string Username = 3;
+  string Email = 4;
+  string Password = 5;
+  bool IsBan = 6;
+  google.protobuf.Timestamp CreatedAt = 7;
+  google.protobuf.Timestamp UpdatedAt = 8;
+}
+
+message AccountCreated {
+  Account Account = 1;
+}
+
+message AccountUpdated {
+  Account Account = 1;
+}
+
+message AccountDelete {
+  string AccountID = 1;
+}
+
+message AccountDeleted {
+  string AccountID = 1;
+  string PlayerID = 2;
+}

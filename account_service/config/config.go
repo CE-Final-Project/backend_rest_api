@@ -4,7 +4,13 @@ import (
 	"flag"
 	"fmt"
 	"github.com/ce-final-project/backend_rest_api/pkg/constants"
+	kafkaClient "github.com/ce-final-project/backend_rest_api/pkg/kafka"
+	"github.com/ce-final-project/backend_rest_api/pkg/logger"
+	"github.com/ce-final-project/backend_rest_api/pkg/mongodb"
 	"github.com/ce-final-project/backend_rest_api/pkg/postgres"
+	"github.com/ce-final-project/backend_rest_api/pkg/probes"
+	"github.com/ce-final-project/backend_rest_api/pkg/redis"
+	"github.com/ce-final-project/backend_rest_api/pkg/tracing"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"os"
@@ -17,14 +23,37 @@ func init() {
 }
 
 type Config struct {
-	ServiceName string
-	Postgresql  *postgres.Config `mapstructure:"postgres"`
-	GRPC        GRPC             `mapstructure:"grpc"`
+	ServiceName      string              `mapstructure:"serviceName"`
+	Logger           *logger.Config      `mapstructure:"logger"`
+	KafkaTopics      KafkaTopics         `mapstructure:"kafkaTopics"`
+	GRPC             GRPC                `mapstructure:"grpc"`
+	Postgresql       *postgres.Config    `mapstructure:"postgres"`
+	Kafka            *kafkaClient.Config `mapstructure:"kafka"`
+	Mongo            *mongodb.Config     `mapstructure:"mongo"`
+	Redis            *redis.Config       `mapstructure:"redis"`
+	MongoCollections MongoCollections    `mapstructure:"mongoCollections"`
+	Probes           probes.Config       `mapstructure:"probes"`
+	ServiceSettings  ServiceSettings     `mapstructure:"serviceSettings"`
+	Jaeger           *tracing.Config     `mapstructure:"jaeger"`
 }
 
 type GRPC struct {
 	Port        string `mapstructure:"port"`
 	Development bool   `mapstructure:"development"`
+}
+
+type MongoCollections struct {
+	Accounts string `mapstructure:"accounts"`
+}
+
+type KafkaTopics struct {
+	AccountCreated kafkaClient.TopicConfig `mapstructure:"accountCreated"`
+	AccountUpdated kafkaClient.TopicConfig `mapstructure:"accountUpdated"`
+	AccountDeleted kafkaClient.TopicConfig `mapstructure:"accountDeleted"`
+}
+
+type ServiceSettings struct {
+	RedisAccountPrefixKey string `mapstructure:"redisAccountPrefixKey"`
 }
 
 func InitConfig() (*Config, error) {
@@ -37,7 +66,7 @@ func InitConfig() (*Config, error) {
 			if err != nil {
 				return nil, errors.Wrap(err, "os.Getwd")
 			}
-			configPath = fmt.Sprintf("%s/config/config.yaml", getwd)
+			configPath = fmt.Sprintf("%s/account_service/config/config.yaml", getwd)
 		}
 	}
 
@@ -61,26 +90,17 @@ func InitConfig() (*Config, error) {
 	if postgresHost != "" {
 		cfg.Postgresql.Host = postgresHost
 	}
-	postgresUser := os.Getenv(constants.PostgresqlUser)
-	if postgresUser != "" {
-		cfg.Postgresql.User = postgresUser
-	}
-	postgresPWD := os.Getenv(constants.PostgresqlPassword)
-	if postgresPWD != "" {
-		cfg.Postgresql.Password = postgresPWD
-	}
-	postgresDBName := os.Getenv(constants.PostgresqlDBName)
-	if postgresDBName != "" {
-		cfg.Postgresql.DBName = postgresDBName
-	}
-
-	postgresSSL := os.Getenv(constants.PostgresqlSSL)
-	if postgresSSL != "" {
-		cfg.Postgresql.SSLMode = postgresSSL
-	}
 	postgresPort := os.Getenv(constants.PostgresqlPort)
 	if postgresPort != "" {
 		cfg.Postgresql.Port = postgresPort
+	}
+	jaegerAddr := os.Getenv(constants.JaegerHostPort)
+	if jaegerAddr != "" {
+		cfg.Jaeger.HostPort = jaegerAddr
+	}
+	kafkaBrokers := os.Getenv(constants.KafkaBrokers)
+	if kafkaBrokers != "" {
+		cfg.Kafka.Brokers = []string{kafkaBrokers}
 	}
 
 	return cfg, nil

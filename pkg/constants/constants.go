@@ -16,7 +16,7 @@ const (
 	PostgresqlPort     = "POSTGRES_PORT"
 	PostgresqlSSL      = "POSTGRES_SSL"
 
-	ReaderServicePort = "READER_SERVICE"
+	AccountServicePort = "ACCOUNT_SERVICE"
 
 	Yaml     = "yaml"
 	Redis    = "redis"

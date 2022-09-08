@@ -1,16 +1,67 @@
-serviceName: "account_service"
+serviceName: account_service
 grpc:
-  port: 5001
+  port: :5003
   development: true
+probes:
+  readinessPath: /ready
+  livenessPath: /live
+  port: :3003
+  pprof: :6003
+  prometheusPath: /metrics
+  prometheusPort: :8003
+  checkIntervalSeconds: 10
 logger:
   level: debug
   devMode: false
   encoder: json
 postgres:
-  host: postgres-game-db
+  host: localhost
   port: 5432
   user: account
   password: "3uP*SHMmk$*ri"
   dbName: account_db
-  sslMode: disable
-
+  sslMode: false
+kafka:
+  brokers: [ "localhost:9092" ]
+  groupID: writer_microservice_consumer
+  initTopics: true
+kafkaTopics:
+  accountCreate:
+    topicName: account_create
+    partitions: 10
+    replicationFactor: 1
+  accountUpdate:
+    topicName: account_update
+    partitions: 10
+    replicationFactor: 1
+  accountCreated:
+    topicName: account_created
+    partitions: 10
+    replicationFactor: 1
+  accountUpdated:
+    topicName: account_updated
+    partitions: 10
+    replicationFactor: 1
+  accountDeleted:
+    topicName: account_deleted
+    partitions: 10
+    replicationFactor: 1
+redis:
+  addr: "localhost:6379"
+  password: ""
+  db: 0
+  poolSize: 300
+mongo:
+  uri: "mongodb://localhost:27017"
+  user: admin
+  password: admin
+  db: accounts
+mongoCollections:
+  accounts: accounts
+serviceSettings:
+  redisAccountPrefixKey: "account"
+jaeger:
+  enable: true
+  serviceName: account_service
+  hostPort: "localhost:6831"
+  logSpans: false

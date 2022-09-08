@@ -4,7 +4,10 @@ import (
 	"flag"
 	"fmt"
 	"github.com/ce-final-project/backend_rest_api/pkg/constants"
-	"github.com/ce-final-project/backend_rest_api/pkg/postgres"
+	"github.com/ce-final-project/backend_rest_api/pkg/kafka"
+	"github.com/ce-final-project/backend_rest_api/pkg/logger"
+	"github.com/ce-final-project/backend_rest_api/pkg/probes"
+	"github.com/ce-final-project/backend_rest_api/pkg/tracing"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"os"
@@ -17,14 +20,35 @@ func init() {
 }
 
 type Config struct {
-	ServiceName string
-	Postgresql  *postgres.Config `mapstructure:"postgres"`
-	GRPC        GRPC             `mapstructure:"grpc"`
+	ServiceName string          `mapstructure:"serviceName"`
+	Logger      *logger.Config  `mapstructure:"logger"`
+	KafkaTopics KafkaTopics     `mapstructure:"kafkaTopics"`
+	Http        Http            `mapstructure:"http"`
+	Grpc        Grpc            `mapstructure:"grpc"`
+	Kafka       *kafka.Config   `mapstructure:"kafka"`
+	Probes      probes.Config   `mapstructure:"probes"`
+	Jaeger      *tracing.Config `mapstructure:"jaeger"`
 }
 
-type GRPC struct {
-	Port        string `mapstructure:"port"`
-	Development bool   `mapstructure:"development"`
+type Http struct {
+	Port                string   `mapstructure:"port"`
+	Development         bool     `mapstructure:"development"`
+	BasePath            string   `mapstructure:"basePath"`
+	AccountsPath        string   `mapstructure:"accountsPath"`
+	DebugHeaders        bool     `mapstructure:"debugHeaders"`
+	HttpClientDebug     bool     `mapstructure:"httpClientDebug"`
+	DebugErrorsResponse bool     `mapstructure:"debugErrorsResponse"`
+	IgnoreLogUrls       []string `mapstructure:"ignoreLogUrls"`
+}
+
+type Grpc struct {
+	AccountServicePort string `mapstructure:"accountServicePort"`
+}
+
+type KafkaTopics struct {
+	AccountCreate kafka.TopicConfig `mapstructure:"accountCreate"`
+	AccountUpdate kafka.TopicConfig `mapstructure:"accountUpdate"`
+	AccountDelete kafka.TopicConfig `mapstructure:"accountDelete"`
 }
 
 func InitConfig() (*Config, error) {
@@ -37,11 +61,12 @@ func InitConfig() (*Config, error) {
 			if err != nil {
 				return nil, errors.Wrap(err, "os.Getwd")
 			}
-			configPath = fmt.Sprintf("%s/config/config.yaml", getwd)
+			configPath = fmt.Sprintf("%s/authentication_service/config/config.yaml", getwd)
 		}
 	}
 
-	var cfg *Config
+	cfg := &Config{}
+
 	viper.SetConfigType(constants.Yaml)
 	viper.SetConfigFile(configPath)
 
@@ -49,38 +74,25 @@ func InitConfig() (*Config, error) {
 		return nil, errors.Wrap(err, "viper.ReadInConfig")
 	}
 
-	if err := viper.Unmarshal(&cfg); err != nil {
+	if err := viper.Unmarshal(cfg); err != nil {
 		return nil, errors.Wrap(err, "viper.Unmarshal")
 	}
 
-	grpcPort := os.Getenv(constants.GrpcPort)
-	if grpcPort != "" {
-		cfg.GRPC.Port = grpcPort
+	httpPort := os.Getenv(constants.HttpPort)
+	if httpPort != "" {
+		cfg.Http.Port = httpPort
 	}
-	postgresHost := os.Getenv(constants.PostgresqlHost)
-	if postgresHost != "" {
-		cfg.Postgresql.Host = postgresHost
+	kafkaBrokers := os.Getenv(constants.KafkaBrokers)
+	if kafkaBrokers != "" {
+		cfg.Kafka.Brokers = []string{kafkaBrokers}
 	}
-	postgresUser := os.Getenv(constants.PostgresqlUser)
-	if postgresUser != "" {
-		cfg.Postgresql.User = postgresUser
+	jaegerAddr := os.Getenv(constants.JaegerHostPort)
+	if jaegerAddr != "" {
+		cfg.Jaeger.HostPort = jaegerAddr
 	}
-	postgresPWD := os.Getenv(constants.PostgresqlPassword)
-	if postgresPWD != "" {
-		cfg.Postgresql.Password = postgresPWD
-	}
-	postgresDBName := os.Getenv(constants.PostgresqlDBName)
-	if postgresDBName != "" {
-		cfg.Postgresql.DBName = postgresDBName
-	}
-
-	postgresSSL := os.Getenv(constants.PostgresqlSSL)
-	if postgresSSL != "" {
-		cfg.Postgresql.SSLMode = postgresSSL
-	}
-	postgresPort := os.Getenv(constants.PostgresqlPort)
-	if postgresPort != "" {
-		cfg.Postgresql.Port = postgresPort
+	accountServicePort := os.Getenv(constants.AccountServicePort)
+	if accountServicePort != "" {
+		cfg.Grpc.AccountServicePort = accountServicePort
 	}
 
 	return cfg, nil

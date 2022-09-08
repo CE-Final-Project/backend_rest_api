@@ -1,11 +1,11 @@
 package postgres
 
 import (
+	"context"
 	"fmt"
-	"github.com/ce-final-project/backend_rest_api/pkg/constants"
-	"github.com/jmoiron/sqlx"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/pkg/errors"
-	"os"
+	"time"
 )
 
 type Config struct {
@@ -13,51 +13,46 @@ type Config struct {
 	Port     string `yaml:"port"`
 	User     string `yaml:"user"`
 	DBName   string `yaml:"dbName"`
-	SSLMode  string `yaml:"sslMode"`
+	SSLMode  bool   `yaml:"sslMode"`
 	Password string `yaml:"password"`
 }
 
-func NewPostgresDB(cfg *Config) (*sqlx.DB, error) {
-	dataSourceName := fmt.Sprintf("host=%v port=%v user=%v password=%v dbname=%v sslmode=%v",
+const (
+	maxConn           = 50
+	healthCheckPeriod = 1 * time.Minute
+	maxConnIdleTime   = 1 * time.Minute
+	maxConnLifetime   = 3 * time.Minute
+	minConns          = 10
+	lazyConnect       = false
+)
+
+// NewPgxConn pool
+func NewPgxConn(cfg *Config) (*pgxpool.Pool, error) {
+	ctx := context.Background()
+	dataSourceName := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s",
 		cfg.Host,
 		cfg.Port,
 		cfg.User,
-		cfg.Password,
 		cfg.DBName,
-		cfg.SSLMode,
+		cfg.Password,
 	)
 
-	db, err := sqlx.Open("postgres", dataSourceName)
+	poolCfg, err := pgxpool.ParseConfig(dataSourceName)
 	if err != nil {
 		return nil, err
 	}
-	err = db.Ping()
-	if err != nil {
-		return nil, err
-	}
-	return db, nil
-}
 
-func InitTableDB(db *sqlx.DB) error {
-	var initTablePath string
-	initTablePathFromEnv := os.Getenv(constants.InitTablePath)
-	if initTablePathFromEnv != "" {
-		initTablePath = initTablePathFromEnv
-	} else {
-		getwd, err := os.Getwd()
-		if err != nil {
-			return errors.Wrap(err, "Initial Table database error: os.Getwd")
-		}
-		initTablePath = fmt.Sprintf("%s/scripts/account.sql", getwd)
-	}
-	query, err := os.ReadFile(initTablePath)
-	if err != nil {
-		return errors.Wrap(err, "Initial Table database error: os.ReadFile")
-	}
-	_, err = db.Exec(string(query))
-	if err != nil {
-		return errors.Wrap(err, "Initial Table database error: db.Exec")
-	}
-	return nil
+	poolCfg.MaxConns = maxConn
+	poolCfg.HealthCheckPeriod = healthCheckPeriod
+	poolCfg.MaxConnIdleTime = maxConnIdleTime
+	poolCfg.MaxConnLifetime = maxConnLifetime
+	poolCfg.MinConns = minConns
+	poolCfg.LazyConnect = lazyConnect
 
+	connPool, err := pgxpool.ConnectConfig(ctx, poolCfg)
+	if err != nil {
+		return nil, errors.Wrap(err, "pgx.ConnectConfig")
+	}
+
+	return connPool, nil
 }
