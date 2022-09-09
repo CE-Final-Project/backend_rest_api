@@ -29,7 +29,7 @@ message Account {
   string PlayerID = 2;
   string Username = 3;
   string Email = 4;
-  string Password = 5;
+  string PasswordHashed = 5;
   bool IsBan = 6;
   google.protobuf.Timestamp CreatedAt = 7;
   google.protobuf.Timestamp UpdatedAt = 8;
@@ -49,5 +49,4 @@ message AccountDelete {
 
 message AccountDeleted {
   string AccountID = 1;
-  string PlayerID = 2;
 }

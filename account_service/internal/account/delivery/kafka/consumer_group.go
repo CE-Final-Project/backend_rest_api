@@ -46,12 +46,12 @@ func (s *accountMessageProcessor) ProcessMessages(ctx context.Context, r *kafka.
 		s.logProcessMessage(m, workerID)
 
 		switch m.Topic {
-		case s.cfg.KafkaTopics.AccountCreated.TopicName:
-			s.processAccountCreated(ctx, r, m)
-		case s.cfg.KafkaTopics.AccountUpdated.TopicName:
-			s.processAccountUpdated(ctx, r, m)
-		case s.cfg.KafkaTopics.AccountDeleted.TopicName:
-			s.processAccountDeleted(ctx, r, m)
+		case s.cfg.KafkaTopics.AccountCreate.TopicName:
+			s.processCreateAccount(ctx, r, m)
+		case s.cfg.KafkaTopics.AccountUpdate.TopicName:
+			s.processUpdateAccount(ctx, r, m)
+		case s.cfg.KafkaTopics.AccountDelete.TopicName:
+			s.processDeleteAccount(ctx, r, m)
 		}
 	}
 }

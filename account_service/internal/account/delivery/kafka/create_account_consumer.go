@@ -6,6 +6,7 @@ import (
 	"github.com/ce-final-project/backend_rest_api/account_service/internal/account/commands"
 	"github.com/ce-final-project/backend_rest_api/pkg/tracing"
 	kafkaMessages "github.com/ce-final-project/backend_rest_api/proto/kafka"
+	uuid "github.com/satori/go.uuid"
 	"github.com/segmentio/kafka-go"
 	"google.golang.org/protobuf/proto"
 	"time"
@@ -20,21 +21,27 @@ var (
 	retryOptions = []retry.Option{retry.Attempts(retryAttempts), retry.Delay(retryDelay), retry.DelayType(retry.BackOffDelay)}
 )
 
-func (s *accountMessageProcessor) processAccountCreated(ctx context.Context, r *kafka.Reader, m kafka.Message) {
+func (s *accountMessageProcessor) processCreateAccount(ctx context.Context, r *kafka.Reader, m kafka.Message) {
 	s.metrics.CreateAccountKafkaMessages.Inc()
 
-	ctx, span := tracing.StartKafkaConsumerTracerSpan(ctx, m.Headers, "accountMessageProcessor.processAccountCreated")
+	ctx, span := tracing.StartKafkaConsumerTracerSpan(ctx, m.Headers, "accountMessageProcessor.processCreateAccount")
 	defer span.Finish()
 
-	msg := &kafkaMessages.AccountCreated{}
-	if err := proto.Unmarshal(m.Value, msg); err != nil {
+	var msg kafkaMessages.AccountCreate
+	if err := proto.Unmarshal(m.Value, &msg); err != nil {
 		s.log.WarnMsg("proto.Unmarshal", err)
 		s.commitErrMessage(ctx, r, m)
 		return
 	}
 
-	p := msg.GetAccount()
-	command := commands.NewCreateAccountCommand(p.GetAccountID(), p.GetPlayerID(), p.GetUsername(), p.GetEmail(), p.GetPassword(), p.GetIsBan(), p.GetCreatedAt().AsTime(), p.GetUpdatedAt().AsTime())
+	proUUID, err := uuid.FromString(msg.GetAccountID())
+	if err != nil {
+		s.log.WarnMsg("proto.Unmarshal", err)
+		s.commitErrMessage(ctx, r, m)
+		return
+	}
+
+	command := commands.NewCreateAccountCommand(proUUID, msg.GetPlayerID(), msg.GetUsername(), msg.GetEmail(), msg.GetPassword())
 	if err := s.v.StructCtx(ctx, command); err != nil {
 		s.log.WarnMsg("validate", err)
 		s.commitErrMessage(ctx, r, m)
