@@ -7,13 +7,3 @@ CREATE DATABASE account_db
     LC_CTYPE = 'en_US.utf8'
     TABLESPACE = pg_default
     CONNECTION LIMIT = -1;
-
-CREATE USER auth WITH ENCRYPTED PASSWORD '7B92d!qRUb7Li' NOSUPERUSER NOINHERIT;
-CREATE DATABASE auth_db
-    WITH
-    OWNER auth
-    ENCODING 'UTF8'
-    LC_COLLATE = 'en_US.utf8'
-    LC_CTYPE = 'en_US.utf8'
-    TABLESPACE = pg_default
-    CONNECTION LIMIT = -1;

@@ -7,16 +7,14 @@ import (
 	"github.com/ce-final-project/backend_rest_api/account_service/internal/account/queries"
 	"github.com/ce-final-project/backend_rest_api/account_service/internal/account/service"
 	"github.com/ce-final-project/backend_rest_api/account_service/internal/metrics"
-	"github.com/ce-final-project/backend_rest_api/account_service/internal/models"
+	"github.com/ce-final-project/backend_rest_api/account_service/mappers"
 	accountService "github.com/ce-final-project/backend_rest_api/account_service/proto/account"
 	"github.com/ce-final-project/backend_rest_api/pkg/logger"
 	"github.com/ce-final-project/backend_rest_api/pkg/tracing"
-	"github.com/ce-final-project/backend_rest_api/pkg/utils"
 	"github.com/go-playground/validator"
 	uuid "github.com/satori/go.uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"time"
 )
 
 type grpcService struct {
@@ -37,19 +35,26 @@ func (s *grpcService) CreateAccount(ctx context.Context, req *accountService.Cre
 	ctx, span := tracing.StartGrpcServerTracerSpan(ctx, "grpcService.CreateAccount")
 	defer span.Finish()
 
-	command := commands.NewCreateAccountCommand(req.GetAccountID(), req.GetPlayerID(), req.GetUsername(), req.GetEmail(), req.GetPassword(), false, time.Now(), time.Now())
+	accountUUID, err := uuid.FromString(req.GetAccountID())
+	if err != nil {
+		s.log.WarnMsg("uuid.FromString", err)
+		return nil, s.errResponse(codes.InvalidArgument, err)
+	}
+
+	command := commands.NewCreateAccountCommand(accountUUID, req.GetPlayerID(), req.GetUsername(), req.GetEmail(), req.GetPassword())
 	if err := s.v.StructCtx(ctx, command); err != nil {
 		s.log.WarnMsg("validate", err)
 		return nil, s.errResponse(codes.InvalidArgument, err)
 	}
 
-	if err := s.as.Commands.CreateAccount.Handle(ctx, command); err != nil {
+	err = s.as.Commands.CreateAccount.Handle(ctx, command)
+	if err != nil {
 		s.log.WarnMsg("CreateAccount.Handle", err)
-		return nil, s.errResponse(codes.InvalidArgument, err)
+		return nil, s.errResponse(codes.Internal, err)
 	}
 
 	s.metrics.SuccessGrpcRequests.Inc()
-	return &accountService.CreateAccountRes{AccountID: req.GetAccountID()}, nil
+	return &accountService.CreateAccountRes{AccountID: accountUUID.String()}, nil
 }
 
 func (s *grpcService) UpdateAccount(ctx context.Context, req *accountService.UpdateAccountReq) (*accountService.UpdateAccountRes, error) {
@@ -58,19 +63,26 @@ func (s *grpcService) UpdateAccount(ctx context.Context, req *accountService.Upd
 	ctx, span := tracing.StartGrpcServerTracerSpan(ctx, "grpcService.UpdateAccount")
 	defer span.Finish()
 
-	command := commands.NewUpdateAccountCommand(req.GetAccountID(), req.GetPlayerID(), req.GetEmail(), req.GetPassword(), req.GetIsBan(), time.Now())
+	accountUUID, err := uuid.FromString(req.GetAccountID())
+	if err != nil {
+		s.log.WarnMsg("uuid.FromString", err)
+		return nil, s.errResponse(codes.InvalidArgument, err)
+	}
+
+	command := commands.NewUpdateAccountCommand(accountUUID, req.GetUsername(), req.GetEmail(), req.GetPassword(), req.GetIsBan())
 	if err := s.v.StructCtx(ctx, command); err != nil {
 		s.log.WarnMsg("validate", err)
 		return nil, s.errResponse(codes.InvalidArgument, err)
 	}
 
-	if err := s.as.Commands.UpdateAccount.Handle(ctx, command); err != nil {
+	err = s.as.Commands.UpdateAccount.Handle(ctx, command)
+	if err != nil {
 		s.log.WarnMsg("UpdateAccount.Handle", err)
-		return nil, s.errResponse(codes.InvalidArgument, err)
+		return nil, s.errResponse(codes.Internal, err)
 	}
 
 	s.metrics.SuccessGrpcRequests.Inc()
-	return &accountService.UpdateAccountRes{AccountID: req.GetAccountID()}, nil
+	return &accountService.UpdateAccountRes{}, nil
 }
 
 func (s *grpcService) GetAccountById(ctx context.Context, req *accountService.GetAccountByIdReq) (*accountService.GetAccountByIdRes, error) {
@@ -98,47 +110,7 @@ func (s *grpcService) GetAccountById(ctx context.Context, req *accountService.Ge
 	}
 
 	s.metrics.SuccessGrpcRequests.Inc()
-	return &accountService.GetAccountByIdRes{Account: models.AccountToGrpcMessage(account)}, nil
-}
-
-func (s *grpcService) SearchAccount(ctx context.Context, req *accountService.SearchReq) (*accountService.SearchRes, error) {
-	s.metrics.SearchAccountGrpcRequests.Inc()
-
-	ctx, span := tracing.StartGrpcServerTracerSpan(ctx, "grpcService.SearchAccount")
-	defer span.Finish()
-
-	pq := utils.NewPaginationQuery(int(req.GetSize()), int(req.GetPage()))
-
-	query := queries.NewSearchAccountQuery(req.GetSearch(), pq)
-	accountsList, err := s.as.Queries.SearchAccount.Handle(ctx, query)
-	if err != nil {
-		s.log.WarnMsg("SearchAccount.Handle", err)
-		return nil, s.errResponse(codes.Internal, err)
-	}
-
-	s.metrics.SuccessGrpcRequests.Inc()
-	return models.AccountListToGrpc(accountsList), nil
-}
-
-func (s *grpcService) DeleteAccountByID(ctx context.Context, req *accountService.DeleteAccountByIdReq) (*accountService.DeleteAccountByIdRes, error) {
-	s.metrics.DeleteAccountGrpcRequests.Inc()
-
-	ctx, span := tracing.StartGrpcServerTracerSpan(ctx, "grpcService.DeleteAccountByID")
-	defer span.Finish()
-
-	accountUUID, err := uuid.FromString(req.GetAccountID())
-	if err != nil {
-		s.log.WarnMsg("uuid.FromString", err)
-		return nil, s.errResponse(codes.InvalidArgument, err)
-	}
-
-	if err := s.as.Commands.DeleteAccount.Handle(ctx, commands.NewDeleteAccountCommand(accountUUID)); err != nil {
-		s.log.WarnMsg("DeleteAccount.Handle", err)
-		return nil, s.errResponse(codes.Internal, err)
-	}
-
-	s.metrics.SuccessGrpcRequests.Inc()
-	return &accountService.DeleteAccountByIdRes{}, nil
+	return &accountService.GetAccountByIdRes{Account: mappers.AccountToGrpc(account)}, nil
 }
 
 func (s *grpcService) errResponse(c codes.Code, err error) error {

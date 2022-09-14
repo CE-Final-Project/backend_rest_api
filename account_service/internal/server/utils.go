@@ -9,7 +9,10 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/segmentio/kafka-go"
+	"net"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -35,11 +38,81 @@ func (s *server) connectKafkaBrokers(ctx context.Context) error {
 	return nil
 }
 
+func (s *server) initKafkaTopics(ctx context.Context) {
+	controller, err := s.kafkaConn.Controller()
+	if err != nil {
+		s.log.WarnMsg("kafkaConn.Controller", err)
+		return
+	}
+
+	controllerURI := net.JoinHostPort(controller.Host, strconv.Itoa(controller.Port))
+	s.log.Infof("kafka controller uri: %s", controllerURI)
+
+	conn, err := kafka.DialContext(ctx, "tcp", controllerURI)
+	if err != nil {
+		s.log.WarnMsg("initKafkaTopics.DialContext", err)
+		return
+	}
+	defer conn.Close() // nolint: errcheck
+
+	s.log.Infof("established new kafka controller connection: %s", controllerURI)
+
+	accountCreateTopic := kafka.TopicConfig{
+		Topic:             s.cfg.KafkaTopics.AccountCreate.TopicName,
+		NumPartitions:     s.cfg.KafkaTopics.AccountCreate.Partitions,
+		ReplicationFactor: s.cfg.KafkaTopics.AccountCreate.ReplicationFactor,
+	}
+
+	accountCreatedTopic := kafka.TopicConfig{
+		Topic:             s.cfg.KafkaTopics.AccountCreated.TopicName,
+		NumPartitions:     s.cfg.KafkaTopics.AccountCreated.Partitions,
+		ReplicationFactor: s.cfg.KafkaTopics.AccountCreated.ReplicationFactor,
+	}
+
+	accountUpdateTopic := kafka.TopicConfig{
+		Topic:             s.cfg.KafkaTopics.AccountUpdate.TopicName,
+		NumPartitions:     s.cfg.KafkaTopics.AccountUpdate.Partitions,
+		ReplicationFactor: s.cfg.KafkaTopics.AccountUpdate.ReplicationFactor,
+	}
+
+	accountUpdatedTopic := kafka.TopicConfig{
+		Topic:             s.cfg.KafkaTopics.AccountUpdated.TopicName,
+		NumPartitions:     s.cfg.KafkaTopics.AccountUpdated.Partitions,
+		ReplicationFactor: s.cfg.KafkaTopics.AccountUpdated.ReplicationFactor,
+	}
+
+	accountDeleteTopic := kafka.TopicConfig{
+		Topic:             s.cfg.KafkaTopics.AccountDelete.TopicName,
+		NumPartitions:     s.cfg.KafkaTopics.AccountDelete.Partitions,
+		ReplicationFactor: s.cfg.KafkaTopics.AccountDelete.ReplicationFactor,
+	}
+
+	accountDeletedTopic := kafka.TopicConfig{
+		Topic:             s.cfg.KafkaTopics.AccountDeleted.TopicName,
+		NumPartitions:     s.cfg.KafkaTopics.AccountDeleted.Partitions,
+		ReplicationFactor: s.cfg.KafkaTopics.AccountDeleted.ReplicationFactor,
+	}
+
+	if err := conn.CreateTopics(
+		accountCreateTopic,
+		accountUpdateTopic,
+		accountCreatedTopic,
+		accountUpdatedTopic,
+		accountDeleteTopic,
+		accountDeletedTopic,
+	); err != nil {
+		s.log.WarnMsg("kafkaConn.CreateTopics", err)
+		return
+	}
+
+	s.log.Infof("kafka topics created or already exists: %+v", []kafka.TopicConfig{accountCreateTopic, accountUpdateTopic, accountCreatedTopic, accountUpdatedTopic, accountDeleteTopic, accountDeletedTopic})
+}
+
 func (s *server) getConsumerGroupTopics() []string {
 	return []string{
-		s.cfg.KafkaTopics.AccountCreated.TopicName,
-		s.cfg.KafkaTopics.AccountUpdated.TopicName,
-		s.cfg.KafkaTopics.AccountDeleted.TopicName,
+		s.cfg.KafkaTopics.AccountCreate.TopicName,
+		s.cfg.KafkaTopics.AccountUpdate.TopicName,
+		s.cfg.KafkaTopics.AccountDelete.TopicName,
 	}
 }
 
@@ -50,12 +123,8 @@ func (s *server) runHealthCheck(ctx context.Context) {
 		return nil
 	}, time.Duration(s.cfg.Probes.CheckIntervalSeconds)*time.Second))
 
-	health.AddReadinessCheck(constants.Redis, healthcheck.AsyncWithContext(ctx, func() error {
-		return s.redisClient.Ping(ctx).Err()
-	}, time.Duration(s.cfg.Probes.CheckIntervalSeconds)*time.Second))
-
-	health.AddReadinessCheck(constants.MongoDB, healthcheck.AsyncWithContext(ctx, func() error {
-		return s.mongoClient.Ping(ctx, nil)
+	health.AddReadinessCheck(constants.Postgres, healthcheck.AsyncWithContext(ctx, func() error {
+		return s.pgConn.Ping(ctx)
 	}, time.Duration(s.cfg.Probes.CheckIntervalSeconds)*time.Second))
 
 	health.AddReadinessCheck(constants.Kafka, healthcheck.AsyncWithContext(ctx, func() error {

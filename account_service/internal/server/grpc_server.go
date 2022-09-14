@@ -1,7 +1,7 @@
 package server
 
 import (
-	accountGrpc "github.com/ce-final-project/backend_rest_api/account_service/internal/account/delivery/grpc"
+	grpc2 "github.com/ce-final-project/backend_rest_api/account_service/internal/account/delivery/grpc"
 	accountService "github.com/ce-final-project/backend_rest_api/account_service/proto/account"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
@@ -46,8 +46,8 @@ func (s *server) newAccountGrpcServer() (func() error, *grpc.Server, error) {
 		),
 	)
 
-	accountGrpcService := accountGrpc.NewAccountGrpcService(s.log, s.cfg, s.v, s.ps, s.metrics)
-	accountService.RegisterAccountServiceServer(grpcServer, accountGrpcService)
+	accountGrpcAccount := grpc2.NewAccountGrpcService(s.log, s.cfg, s.v, s.as, s.metrics)
+	accountService.RegisterAccountServiceServer(grpcServer, accountGrpcAccount)
 	grpc_prometheus.Register(grpcServer)
 
 	if s.cfg.GRPC.Development {

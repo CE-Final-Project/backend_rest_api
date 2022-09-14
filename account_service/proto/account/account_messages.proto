@@ -1,0 +1,46 @@
+syntax="proto3";
+
+import "google/protobuf/timestamp.proto";
+
+package accountService;
+
+option go_package = "./;accountService";
+
+message Account {
+  string AccountID = 1;
+  string PlayerID = 2;
+  string Username = 3;
+  string Email = 4;
+  bool IsBan = 5;
+  google.protobuf.Timestamp CreatedAt = 6;
+  google.protobuf.Timestamp UpdatedAt = 7;
+}
+
+message CreateAccountReq {
+  string Username = 1;
+  string Email = 2;
+  string Password = 3;
+}
+
+message CreateAccountRes {
+  string AccountID = 1;
+  string PlayerID = 2;
+}
+
+message UpdateAccountReq {
+  string AccountID = 1;
+  string Username = 3;
+  string Email = 4;
+  bool IsBan = 5;
+  string Password = 6;
+}
+
+message UpdateAccountRes {}
+
+message GetAccountByIdReq {
+  string AccountID = 1;
+}
+
+message GetAccountByIdRes {
+  Account Account = 1;
+}

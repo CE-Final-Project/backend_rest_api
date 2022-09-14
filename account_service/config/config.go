@@ -1,15 +1,12 @@
 package config
 
 import (
-	"flag"
 	"fmt"
 	"github.com/ce-final-project/backend_rest_api/pkg/constants"
 	kafkaClient "github.com/ce-final-project/backend_rest_api/pkg/kafka"
 	"github.com/ce-final-project/backend_rest_api/pkg/logger"
-	"github.com/ce-final-project/backend_rest_api/pkg/mongodb"
 	"github.com/ce-final-project/backend_rest_api/pkg/postgres"
 	"github.com/ce-final-project/backend_rest_api/pkg/probes"
-	"github.com/ce-final-project/backend_rest_api/pkg/redis"
 	"github.com/ce-final-project/backend_rest_api/pkg/tracing"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -18,23 +15,15 @@ import (
 
 var configPath string
 
-func init() {
-	flag.StringVar(&configPath, "config", "", "Account microservice config path")
-}
-
 type Config struct {
-	ServiceName      string              `mapstructure:"serviceName"`
-	Logger           *logger.Config      `mapstructure:"logger"`
-	KafkaTopics      KafkaTopics         `mapstructure:"kafkaTopics"`
-	GRPC             GRPC                `mapstructure:"grpc"`
-	Postgresql       *postgres.Config    `mapstructure:"postgres"`
-	Kafka            *kafkaClient.Config `mapstructure:"kafka"`
-	Mongo            *mongodb.Config     `mapstructure:"mongo"`
-	Redis            *redis.Config       `mapstructure:"redis"`
-	MongoCollections MongoCollections    `mapstructure:"mongoCollections"`
-	Probes           probes.Config       `mapstructure:"probes"`
-	ServiceSettings  ServiceSettings     `mapstructure:"serviceSettings"`
-	Jaeger           *tracing.Config     `mapstructure:"jaeger"`
+	ServiceName string              `mapstructure:"serviceName"`
+	Logger      *logger.Config      `mapstructure:"logger"`
+	KafkaTopics KafkaTopics         `mapstructure:"kafkaTopics"`
+	GRPC        GRPC                `mapstructure:"grpc"`
+	Postgresql  *postgres.Config    `mapstructure:"postgres"`
+	Kafka       *kafkaClient.Config `mapstructure:"kafka"`
+	Probes      probes.Config       `mapstructure:"probes"`
+	Jaeger      *tracing.Config     `mapstructure:"jaeger"`
 }
 
 type GRPC struct {
@@ -42,18 +31,13 @@ type GRPC struct {
 	Development bool   `mapstructure:"development"`
 }
 
-type MongoCollections struct {
-	Accounts string `mapstructure:"accounts"`
-}
-
 type KafkaTopics struct {
+	AccountCreate  kafkaClient.TopicConfig `mapstructure:"accountCreate"`
 	AccountCreated kafkaClient.TopicConfig `mapstructure:"accountCreated"`
+	AccountUpdate  kafkaClient.TopicConfig `mapstructure:"accountUpdate"`
 	AccountUpdated kafkaClient.TopicConfig `mapstructure:"accountUpdated"`
+	AccountDelete  kafkaClient.TopicConfig `mapstructure:"accountDelete"`
 	AccountDeleted kafkaClient.TopicConfig `mapstructure:"accountDeleted"`
-}
-
-type ServiceSettings struct {
-	RedisAccountPrefixKey string `mapstructure:"redisAccountPrefixKey"`
 }
 
 func InitConfig() (*Config, error) {
@@ -70,7 +54,8 @@ func InitConfig() (*Config, error) {
 		}
 	}
 
-	var cfg *Config
+	cfg := &Config{}
+
 	viper.SetConfigType(constants.Yaml)
 	viper.SetConfigFile(configPath)
 
@@ -78,7 +63,7 @@ func InitConfig() (*Config, error) {
 		return nil, errors.Wrap(err, "viper.ReadInConfig")
 	}
 
-	if err := viper.Unmarshal(&cfg); err != nil {
+	if err := viper.Unmarshal(cfg); err != nil {
 		return nil, errors.Wrap(err, "viper.Unmarshal")
 	}
 
@@ -86,6 +71,7 @@ func InitConfig() (*Config, error) {
 	if grpcPort != "" {
 		cfg.GRPC.Port = grpcPort
 	}
+
 	postgresHost := os.Getenv(constants.PostgresqlHost)
 	if postgresHost != "" {
 		cfg.Postgresql.Host = postgresHost

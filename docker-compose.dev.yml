@@ -24,10 +24,10 @@ services:
     networks:
       - microservices
     volumes:
-      - psql_data_container:/var/lib/postgresql/data
+      - ./postgres:/var/lib/postgresql/data
       - ./init_db_script/:/docker-entrypoint-initdb.d/
     ports:
-      - "24069:5432"
+      - "5432:5432"
     environment:
       TZ: "Asia/Bangkok"
       POSTGRES_USER: "admin"
@@ -46,10 +46,30 @@ services:
     environment:
       PGADMIN_DEFAULT_EMAIL: "admin@kmitl.ac.th"
       PGADMIN_DEFAULT_PASSWORD: "s8KHf^fLFWHppKtUJf7VtTE"
+  zookeeper:
+    image: zookeeper:3.5
+    container_name: zookeeper
+    volumes:
+      - ./zookeeper/data:/data
+      - ./zookeeper/datalog:/datalog
 
-volumes:
-  psql_data_container: {}
-  mongodb_data_container: {}
+  kafka:
+    image: bitnami/kafka
+    container_name: kafka
+    ports:
+      - "29092:29092"
+    volumes:
+      - ./kafka:/bitnami/kafka/data
+    environment:
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_BROKER_ID=1
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://localhost:29092
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+    depends_on:
+      - zookeeper
+
 
 networks:
   microservices:

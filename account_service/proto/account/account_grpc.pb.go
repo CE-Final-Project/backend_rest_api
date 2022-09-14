@@ -25,8 +25,6 @@ type AccountServiceClient interface {
 	CreateAccount(ctx context.Context, in *CreateAccountReq, opts ...grpc.CallOption) (*CreateAccountRes, error)
 	UpdateAccount(ctx context.Context, in *UpdateAccountReq, opts ...grpc.CallOption) (*UpdateAccountRes, error)
 	GetAccountById(ctx context.Context, in *GetAccountByIdReq, opts ...grpc.CallOption) (*GetAccountByIdRes, error)
-	SearchAccount(ctx context.Context, in *SearchReq, opts ...grpc.CallOption) (*SearchRes, error)
-	DeleteAccountByID(ctx context.Context, in *DeleteAccountByIdReq, opts ...grpc.CallOption) (*DeleteAccountByIdRes, error)
 }
 
 type accountServiceClient struct {
@@ -64,24 +62,6 @@ func (c *accountServiceClient) GetAccountById(ctx context.Context, in *GetAccoun
 	return out, nil
 }
 
-func (c *accountServiceClient) SearchAccount(ctx context.Context, in *SearchReq, opts ...grpc.CallOption) (*SearchRes, error) {
-	out := new(SearchRes)
-	err := c.cc.Invoke(ctx, "/accountService.accountService/SearchAccount", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *accountServiceClient) DeleteAccountByID(ctx context.Context, in *DeleteAccountByIdReq, opts ...grpc.CallOption) (*DeleteAccountByIdRes, error) {
-	out := new(DeleteAccountByIdRes)
-	err := c.cc.Invoke(ctx, "/accountService.accountService/DeleteAccountByID", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // AccountServiceServer is the server API for AccountService service.
 // All implementations should embed UnimplementedAccountServiceServer
 // for forward compatibility
@@ -89,8 +69,6 @@ type AccountServiceServer interface {
 	CreateAccount(context.Context, *CreateAccountReq) (*CreateAccountRes, error)
 	UpdateAccount(context.Context, *UpdateAccountReq) (*UpdateAccountRes, error)
 	GetAccountById(context.Context, *GetAccountByIdReq) (*GetAccountByIdRes, error)
-	SearchAccount(context.Context, *SearchReq) (*SearchRes, error)
-	DeleteAccountByID(context.Context, *DeleteAccountByIdReq) (*DeleteAccountByIdRes, error)
 }
 
 // UnimplementedAccountServiceServer should be embedded to have forward compatible implementations.
@@ -105,12 +83,6 @@ func (UnimplementedAccountServiceServer) UpdateAccount(context.Context, *UpdateA
 }
 func (UnimplementedAccountServiceServer) GetAccountById(context.Context, *GetAccountByIdReq) (*GetAccountByIdRes, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAccountById not implemented")
-}
-func (UnimplementedAccountServiceServer) SearchAccount(context.Context, *SearchReq) (*SearchRes, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SearchAccount not implemented")
-}
-func (UnimplementedAccountServiceServer) DeleteAccountByID(context.Context, *DeleteAccountByIdReq) (*DeleteAccountByIdRes, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteAccountByID not implemented")
 }
 
 // UnsafeAccountServiceServer may be embedded to opt out of forward compatibility for this service.
@@ -178,42 +150,6 @@ func _AccountService_GetAccountById_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AccountService_SearchAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SearchReq)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AccountServiceServer).SearchAccount(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/accountService.accountService/SearchAccount",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AccountServiceServer).SearchAccount(ctx, req.(*SearchReq))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AccountService_DeleteAccountByID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteAccountByIdReq)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AccountServiceServer).DeleteAccountByID(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/accountService.accountService/DeleteAccountByID",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AccountServiceServer).DeleteAccountByID(ctx, req.(*DeleteAccountByIdReq))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // AccountService_ServiceDesc is the grpc.ServiceDesc for AccountService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -232,14 +168,6 @@ var AccountService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetAccountById",
 			Handler:    _AccountService_GetAccountById_Handler,
-		},
-		{
-			MethodName: "SearchAccount",
-			Handler:    _AccountService_SearchAccount_Handler,
-		},
-		{
-			MethodName: "DeleteAccountByID",
-			Handler:    _AccountService_DeleteAccountByID_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

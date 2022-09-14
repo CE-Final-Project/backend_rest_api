@@ -5,49 +5,61 @@ import (
 	"github.com/ce-final-project/backend_rest_api/account_service/config"
 	"github.com/ce-final-project/backend_rest_api/account_service/internal/account/repository"
 	"github.com/ce-final-project/backend_rest_api/account_service/internal/models"
+	"github.com/ce-final-project/backend_rest_api/account_service/mappers"
+	kafkaClient "github.com/ce-final-project/backend_rest_api/pkg/kafka"
 	"github.com/ce-final-project/backend_rest_api/pkg/logger"
+	"github.com/ce-final-project/backend_rest_api/pkg/tracing"
 	"github.com/ce-final-project/backend_rest_api/pkg/utils"
+	kafkaMessages "github.com/ce-final-project/backend_rest_api/proto/kafka"
 	"github.com/opentracing/opentracing-go"
+	"github.com/segmentio/kafka-go"
+	"google.golang.org/protobuf/proto"
+	"time"
 )
 
 type UpdateAccountCmdHandler interface {
 	Handle(ctx context.Context, command *UpdateAccountCommand) error
 }
 
-type updateAccountCmdHandler struct {
-	log       logger.Logger
-	cfg       *config.Config
-	mongoRepo repository.Repository
-	redisRepo repository.CacheRepository
+type updateAccountHandler struct {
+	log           logger.Logger
+	cfg           *config.Config
+	pgRepo        repository.Repository
+	kafkaProducer kafkaClient.Producer
 }
 
-func NewUpdateAccountCmdHandler(log logger.Logger, cfg *config.Config, mongoRepo repository.Repository, redisRepo repository.CacheRepository) *updateAccountCmdHandler {
-	return &updateAccountCmdHandler{log: log, cfg: cfg, mongoRepo: mongoRepo, redisRepo: redisRepo}
+func NewUpdateAccountHandler(log logger.Logger, cfg *config.Config, pgRepo repository.Repository, kafkaProducer kafkaClient.Producer) *updateAccountHandler {
+	return &updateAccountHandler{log: log, cfg: cfg, pgRepo: pgRepo, kafkaProducer: kafkaProducer}
 }
 
-func (c *updateAccountCmdHandler) Handle(ctx context.Context, command *UpdateAccountCommand) error {
-	span, ctx := opentracing.StartSpanFromContext(ctx, "updateAccountCmdHandler.Handle")
+func (c *updateAccountHandler) Handle(ctx context.Context, command *UpdateAccountCommand) error {
+	span, ctx := opentracing.StartSpanFromContext(ctx, "updateAccountHandler.Handle")
 	defer span.Finish()
 
-	hashedPWD, err := utils.HashPassword(command.Password)
+	passwordHashed, err := utils.HashPassword(command.Password)
 	if err != nil {
 		return err
 	}
 
-	account := &models.Account{
-		AccountID:    command.AccountID,
-		Username:     command.Username,
-		Email:        command.Email,
-		PasswordHash: hashedPWD,
-		IsBan:        command.IsBan,
-		UpdatedAt:    command.UpdatedAt,
-	}
+	productDto := &models.Account{AccountID: command.AccountID, PlayerID: command.PlayerID, Username: command.Username, Email: command.Email, PasswordHash: passwordHashed, IsBan: command.IsBan}
 
-	updated, err := c.mongoRepo.UpdateAccount(ctx, account)
+	product, err := c.pgRepo.UpdateAccount(ctx, productDto)
 	if err != nil {
 		return err
 	}
 
-	c.redisRepo.PutAccount(ctx, updated.AccountID, updated)
-	return nil
+	msg := &kafkaMessages.AccountUpdated{Account: mappers.AccountToGrpcMessage(product)}
+	msgBytes, err := proto.Marshal(msg)
+	if err != nil {
+		return err
+	}
+
+	message := kafka.Message{
+		Topic:   c.cfg.KafkaTopics.AccountUpdated.TopicName,
+		Value:   msgBytes,
+		Time:    time.Now().UTC(),
+		Headers: tracing.GetKafkaTracingHeadersFromSpanCtx(span.Context()),
+	}
+
+	return c.kafkaProducer.PublishMessage(ctx, message)
 }
